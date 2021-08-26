@@ -26,7 +26,8 @@
       <div class="cam-controls">
         <button type="button" class="btn btn-primary mr-20" @click="onCapture">Capture Photo</button>
         <button type="button" class="btn btn-danger mr-20" @click="onStop">Stop Camera</button>
-        <button type="button" class="btn btn-success" @click="onStart">Start Camera</button>
+        <button type="button" class="btn btn-success mr-20" @click="onStart">Start Camera</button>
+        <button type="button" @click="uploadImage">Upload</button>
       </div>
 
       <div class="card-details">
@@ -48,6 +49,10 @@
           <img :src="img" class="img-responsive" />
       </figure>
     </div>
+    <MediaUploader
+      :ref="'triggerUpload'"
+      @onMediaLoad="onMediaLoad"
+    ></MediaUploader>
   </div>
 </template>
 
@@ -55,6 +60,7 @@
 import { WebCam } from "vue-web-cam";
 import Axios from 'axios'
 import get from 'lodash/get'
+import MediaUploader from '@/components/MediaUploader'
 
 export default {
   name: 'App',
@@ -89,10 +95,13 @@ export default {
   methods: {
       onCapture() {
           this.img = this.$refs.webcam.capture();
-          const dataImg = this.img.replace(/^data:image\/[a-z]+;base64,/, "");
-          Axios.post('https://iz1ywuf6z7.execute-api.ap-southeast-2.amazonaws.com/prod/predict', {data: dataImg}).then((res) => {
-            this.imageData = res.data
-          })
+          this.uploadImageToS3(this.img)
+      },
+      uploadImageToS3(image) {
+        const dataImg = image.replace(/^data:image\/[a-z]+;base64,/, "");
+        Axios.post('https://iz1ywuf6z7.execute-api.ap-southeast-2.amazonaws.com/prod/predict', {data: dataImg}).then((res) => {
+          this.imageData = res.data
+        })
       },
       onStarted(stream) {
           console.log("On Started Event", stream);
@@ -118,10 +127,18 @@ export default {
           this.camera = deviceId;
           console.log("On Camera Change Event", deviceId);
       },
+      onMediaLoad(data) {
+        this.img = data.image_preview
+        this.uploadImageToS3(this.img)
+      },
+      uploadImage() {
+        this.$refs.triggerUpload.openFile()
+      },
       get,
   },
   components: {
-    WebCam
+    WebCam,
+    MediaUploader
   }
 }
 </script>
