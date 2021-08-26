@@ -171,4 +171,8 @@ export default {
   flex-direction: column;
   text-align: left;
 }
+
+.img-responsive {
+  max-width: 400px;
+}
 </style>
